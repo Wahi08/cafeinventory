@@ -15,27 +15,38 @@ class Login extends DBConnection {
 	public function index(){
 		echo "<h1>Access Denied</h1> <a href='".base_url."'>Go Back.</a>";
 	}
-	public function login(){
+	public function login()
+	{
 		extract($_POST);
 
-		$stmt = $this->conn->prepare("SELECT * from users where username = ? and password = ? ");
+		$stmt = $this->conn->prepare("SELECT * FROM users WHERE username = ? AND password = ?");
 		$password = md5($password);
-		$stmt->bind_param('ss',$username,$password);
+		$stmt->bind_param('ss', $username, $password);
 		$stmt->execute();
 		$result = $stmt->get_result();
-		if($result->num_rows > 0){
-			foreach($result->fetch_array() as $k => $v){
-				if(!is_numeric($k) && $k != 'password'){
-					$this->settings->set_userdata($k,$v);
-				}
+		if ($result->num_rows > 0) {
+			$row = $result->fetch_assoc();
+			// Retrieve the image blob data from the row
+			$imageBlob = $row['avatar'];
+			// Convert the image blob to base64-encoded string
+			$base64Image = base64_encode($imageBlob);
 
+			// Store the base64-encoded string in the session data
+			$this->settings->set_userdata('avatar', $base64Image);
+
+			foreach ($row as $k => $v) {
+				if (!is_numeric($k) && $k != 'password') {
+					$this->settings->set_userdata($k, $v);
+				}
 			}
-			$this->settings->set_userdata('login_type',1);
-		return json_encode(array('status'=>'success'));
-		}else{
-		return json_encode(array('status'=>'incorrect','last_qry'=>"SELECT * from users where username = '$username' and password = md5('$password') "));
+
+			$this->settings->set_userdata('login_type', 1);
+			return json_encode(array('status' => 'success'));
+		} else {
+			return json_encode(array('status' => 'incorrect', 'last_qry' => "SELECT * from users where username = '$username' and password = md5('$password') "));
 		}
 	}
+
 	public function logout(){
 		if($this->settings->sess_des()){
 			redirect('admin/login.php');
@@ -90,4 +101,4 @@ switch ($action) {
 		echo $auth->index();
 		break;
 }
-
+?>

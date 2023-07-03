@@ -324,6 +324,24 @@ Class Master extends DBConnection {
 
 	}
 
+	function update_item_status(){
+		extract($_POST);
+		$item_id = isset($item_id) ? $item_id : '';
+		$status = isset($status) ? $status : '';
+	
+		$sql = "UPDATE `item_list` SET `status` = '{$status}' WHERE id = '{$item_id}'";
+		$save = $this->conn->query($sql);
+		if($save){
+			$cid = !empty($id) ? $id : $this->conn->insert_id;
+			$resp['status'] = 'success';
+			$this->settings->set_flashdata('success', "Item status has been updated.");
+		}else{
+			$resp['status'] = 'failed';
+			$resp['err'] = $this->conn->error . " [{$sql}]";
+		}
+		return json_encode($resp);
+	}	
+
 }
 
 $Master = new Master();
@@ -362,6 +380,9 @@ switch ($action) {
 	break;
 	case 'delete_waste':
 		echo $Master->delete_waste();
+	break;
+	case 'update_item_status':
+		echo $Master->update_item_status();
 	break;
 	default:
 		// echo $sysset->index();

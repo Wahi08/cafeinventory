@@ -52,6 +52,14 @@
                         </p>
                       </a>
                     </li>
+                    <li class="nav-item dropdown">
+                      <a href="./?page=reports/stock_prediction" class="nav-link nav-items">
+                        <i class="nav-icon fas fa-seedling"></i>
+                        <p>
+                          Stock Prediction
+                        </p>
+                      </a>
+                    </li>
                     <?php if($_settings->userdata('type') == 3 || $_settings->userdata('type') == 2) : ?>
                     <li class="nav-item dropdown">
                       <a href="./?page=stocks" class="nav-link nav-stocks">

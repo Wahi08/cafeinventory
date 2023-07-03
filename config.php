@@ -13,22 +13,26 @@ function redirect($url=''){
 	if(!empty($url))
 	echo '<script>location.href="'.base_url .$url.'"</script>';
 }
-function validate_image($file){
-    global $_settings;
-	if(!empty($file)){
-			// exit;
-        $ex = explode("?",$file);
-        $file = $ex[0];
-        $ts = isset($ex[1]) ? "?".$ex[1] : '';
-		if(is_file(base_app.$file)){
-			return base_url.$file.$ts;
-		}else{
-			return base_url.($_settings->info('logo'));
-		}
-	}else{
-		return base_url.($_settings->info('logo'));
-	}
+function validate_image($imagePath) {
+    // Check if the image path is valid
+    if (!empty($imagePath) && file_exists($imagePath)) {
+        // Read the image file as binary data
+        $imageData = file_get_contents($imagePath);
+
+        // Convert the binary data to base64 format
+        $base64Image = base64_encode($imageData);
+
+        // Generate the data URI with the appropriate image MIME type
+        $mime = mime_content_type($imagePath);
+        $dataURI = 'data:' . $mime . ';base64,' . $base64Image;
+
+        return $dataURI;
+    } else {
+        // Return a placeholder image or default image data URI
+        return 'uploads/avatars/3.png';// Replace with your placeholder image or default image data URI
+    }
 }
+
 function format_num($number = '' , $decimal = ''){
     if(is_numeric($number)){
         $ex = explode(".",$number);

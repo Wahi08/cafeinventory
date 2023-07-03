@@ -1,15 +1,6 @@
 <?php 
 require_once('../../config.php');
 
-if (isset($_GET['id']) && $_GET['id'] > 0) {
-    $qry = $conn->query("SELECT * from `stockout_list` where id = '{$_GET['id']}' ");
-    if ($qry->num_rows > 0) {
-        foreach ($qry->fetch_assoc() as $k => $v) {
-            $$k = $v;
-        }
-    }
-}
-
 $item_id = isset($_GET['iid']) ? $_GET['iid'] : '';
 
 // Retrieve min and max quantity from the item_list table
@@ -22,42 +13,43 @@ $qry2 = $conn->query("SELECT i.*, (COALESCE((SELECT SUM(quantity) FROM `stockin_
                         - COALESCE((SELECT SUM(quantity) FROM `stockout_list` WHERE item_id = $item_id), 0) 
                         - COALESCE((SELECT SUM(quantity) FROM `waste_list` WHERE item_id = $item_id), 0)) 
                         AS `total_quantity` FROM `item_list` i WHERE i.id = $item_id");
-$row = $qry2->fetch_assoc();
-$total_quantity = $row['total_quantity'];
-?>
+    $row = $qry2->fetch_assoc();
+    $total_quantity = $row['total_quantity'];
 
+?>
 <div class="container-fluid">
-    <form action="" id="stockout-form">
-        <input type="hidden" name="id" value="<?= isset($id) ? $id : '' ?>">
-        <input type="hidden" name="item_id" value="<?= isset($item_id) ? $item_id : (isset($_GET['iid']) ? $_GET['iid'] : '') ?>">
+    <form action="" id="stockin-form">
+        <input type="hidden" name="item_id" value="<?= $item_id ?>">
         <div class="form-group">
             <label for="date" class="control-label">Date</label>
-            <input type="date" name="date" id="date" class="form-control form-control-sm rounded-0" value="<?= isset($date) ? $date : '' ?>" max="<?= date("Y-m-d") ?>" required>
+            <input type="date" name="date" id="date" class="form-control form-control-sm rounded-0" max="<?= date("Y-m-d") ?>" required>
         </div>
         <div class="form-group">
             <label for="quantity" class="control-label">Quantity</label>
-            <input type="number" step="any" name="quantity" id="quantity" class="form-control form-control-sm rounded-0 text-right" value="<?= isset($quantity) ? format_num($quantity) : '' ?>" required>
+            <input type="number" step="any" name="quantity" id="quantity" class="form-control form-control-sm rounded-0 text-right" min="<?= $min_quantity ?>" <?= ($total_quantity > $max_quantity) ? 'disabled' : '' ?> required>
         </div>
+
         <div class="form-group">
             <label for="remarks" class="control-label">Remarks</label>
-            <textarea type="3" name="remarks" id="remarks" class="form-control form-control-sm rounded-0" required><?= isset($remarks) ? ($remarks) : '' ?></textarea>
+            <textarea name="remarks" id="remarks" class="form-control form-control-sm rounded-0" required></textarea>
         </div>
     </form>
 </div>
-
 <script>
+
     $(function(){
-        $('#stockout-form').submit(function(e){
+        
+        $('#stockin-form').submit(function(e){
             e.preventDefault();
             var _this = $(this);
             $('.err-msg').remove();
-            if (_this[0].checkValidity() == false) {
+            if(_this[0].checkValidity() == false){
                 _this[0].reportValidity();
                 return false;
             }
             start_loader();
             $.ajax({
-                url: _base_url_ + "classes/Master.php?f=save_stockout",
+                url: _base_url_ + "classes/Master.php?f=save_stockin",
                 data: new FormData($(this)[0]),
                 cache: false,
                 contentType: false,
@@ -65,37 +57,38 @@ $total_quantity = $row['total_quantity'];
                 method: 'POST',
                 type: 'POST',
                 dataType: 'json',
-                error: function(err) {
+                error: function(err){
                     console.log(err);
                     alert_toast("An error occurred", 'error');
                     end_loader();
                 },
                 success: function(resp) {
-                    if (typeof resp == 'object' && resp.status == 'success') {
-                        updateItemStatus(resp.item_id); // Call the function to update item status
-                        location.reload();
-                    } else if (resp.status == 'failed' && !!resp.msg) {
-                        var el = $('<div>');
-                        el.addClass("alert alert-danger err-msg").text(resp.msg);
-                        _this.prepend(el);
-                        el.show('slow');
-                        $("html, body, .modal").scrollTop(0);
-                        end_loader();
-                    } else {
-                        alert_toast("An error occurred", 'error');
-                        end_loader();
-                        console.log(resp);
-                    }
-                    // Update item status to "available" if total quantity is more than minimum quantity
-                    if (parseFloat($('#quantity').val()) > parseFloat(<?= $min_quantity ?>)) {
-                        updateItemStatus(<?= $item_id ?>, '1');
-                    }
-                    // Update item status to "unavailable" if total quantity is lower than minimum quantity
-                    if (parseFloat($('#quantity').val()) < parseFloat(<?= $min_quantity ?>)) {
-                        updateItemStatus(<?= $item_id ?>, '0');
-                    }
+                if (typeof resp == 'object' && resp.status == 'success') {
+                    updateItemStatus(resp.item_id); // Call the function to update item status
+                    location.reload();
+                } else if (resp.status == 'failed' && !!resp.msg) {
+                    var el = $('<div>');
+                    el.addClass("alert alert-danger err-msg").text(resp.msg);
+                    _this.prepend(el);
+                    el.show('slow');
+                    $("html, body, .modal").scrollTop(0);
+                    end_loader();
+                } else {
+                    alert_toast("An error occurred", 'error');
+                    end_loader();
+                    console.log(resp);
                 }
-            });
+
+                // Update item status to "available" if total quantity is more than minimum quantity
+                if (parseFloat(<?php echo $total_quantity; ?> + $('#quantity').val()) > parseFloat(<?php echo $min_quantity; ?>)) {
+                    updateItemStatus(<?php echo $item_id; ?>, '1');
+                }
+                // Update item status to "unavailable" if total quantity is lower than minimum quantity
+                if (parseFloat(<?php echo $total_quantity; ?> + $('#quantity').val()) < parseFloat(<?php echo $min_quantity; ?>)) {
+                    updateItemStatus(<?php echo $item_id; ?>, '0');
+                }
+            }
+
         });
 
         function updateItemStatus(itemID, status) {
@@ -118,4 +111,6 @@ $total_quantity = $row['total_quantity'];
             });
         }
     });
+});
+
 </script>

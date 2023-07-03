@@ -95,7 +95,7 @@
 			uni_modal("<i class='far fa-plus-square'></i> Add New Item ","items/manage_item.php")
 		})
 		$('.edit-data').click(function(){
-			uni_modal("<i class='fa fa-edit'></i> Add New Item ","items/manage_item.php?id="+$(this).attr('data-id'))
+			uni_modal("<i class='fa fa-edit'></i> Edit Item Details ","items/manage_item.php?id="+$(this).attr('data-id'))
 		})
 		$('.view-data').click(function(){
 			uni_modal("<i class='fa fa-th-list'></i> Item Details ","items/view_item.php?id="+$(this).attr('data-id'))

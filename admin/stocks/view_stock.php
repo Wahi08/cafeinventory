@@ -289,14 +289,14 @@ if(isset($_GET['id']) && $_GET['id'] > 0){
             var id = $(this).attr('data-id');
             var itemName = $(this).attr('item-name');
             var minQuantity = $(this).closest('.product-item').find('.min-quantity').data('min-quantity');
-            uni_modal("<i class='far fa-plus-square'></i> &nbsp"+  itemName +" - Add Stock-In ", 'stocks/manage_stockin.php?iid=' + id);
+            uni_modal("<i class='far fa-plus-square'></i> &nbsp"+  itemName +" - Add Stock-In ", 'stocks/add_stockin.php?iid=' + id);
         });
 
 
         $('.edit_stockin').click(function(){
             var id = $(this).attr('data-id');
             var itemName = $(this).attr('item-name');
-            uni_modal("<i class='fa fa-edit'></i> &nbsp"+  itemName +" - Edit Stock-In", 'stocks/edit_stockin.php?id=' + id);
+            uni_modal("<i class='fa fa-edit'></i> &nbsp"+  itemName +" - Edit Stock-In", 'stocks/manage_stockin.php?id=' + id);
         });
 
 
@@ -307,7 +307,7 @@ if(isset($_GET['id']) && $_GET['id'] > 0){
         // Stockout
         $('#add_stockout').click(function(){
             var itemName = $(this).attr('item-name');
-            uni_modal("<i class='far fa-plus-square'></i> &nbsp"+  itemName +" - Add Stock-out", 'stocks/manage_stockout.php?iid=<?= isset($id) ? $id : '' ?>')
+            uni_modal("<i class='far fa-plus-square'></i> &nbsp"+  itemName +" - Add Stock-out", 'stocks/add_stockout.php?iid=<?= isset($id) ? $id : '' ?>')
         })
         $('.edit_stockout').click(function(){
             var itemName = $(this).attr('item-name');
@@ -320,7 +320,7 @@ if(isset($_GET['id']) && $_GET['id'] > 0){
         // Waste
         $('#add_waste').click(function(){
             var itemName = $(this).attr('item-name');
-            uni_modal("<i class='far fa-plus-square'></i> &nbsp"+  itemName +" - Add Waste", 'stocks/manage_waste.php?iid=<?= isset($id) ? $id : '' ?>')
+            uni_modal("<i class='far fa-plus-square'></i> &nbsp"+  itemName +" - Add Waste", 'stocks/add_waste.php?iid=<?= isset($id) ? $id : '' ?>')
         })
         $('.edit_waste').click(function(){
             var itemName = $(this).attr('item-name');

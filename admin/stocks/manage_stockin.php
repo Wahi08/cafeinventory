@@ -1,44 +1,45 @@
 <?php 
 require_once('../../config.php');
 
+$isEdit = false; // Flag to determine if it's an edit action
+$stockin_id = isset($_GET['id']) ? $_GET['id'] : '';
+
+if ($stockin_id > 0) {
+    $qry = $conn->query("SELECT * FROM `stockin_list` WHERE id = '{$stockin_id}' ");
+    if ($qry->num_rows > 0) {
+        foreach ($qry->fetch_assoc() as $k => $v) {
+            $$k = $v;
+        }
+        $isEdit = true; // Set the flag to indicate it's an edit action
+    }
+}
+
 $item_id = isset($_GET['iid']) ? $_GET['iid'] : '';
-
-// Retrieve min and max quantity from the item_list table
-$qry = $conn->query("SELECT min_quantity as min_quantity, max_quantity as max_quantity FROM item_list WHERE id = '$item_id'");
+$qry = $conn->query("SELECT i.id, i.min_quantity, i.max_quantity FROM item_list i INNER JOIN stockin_list s ON i.id = s.item_id WHERE s.id = '$stockin_id'");
 $quantity_range = $qry->fetch_assoc();
-$min_quantity = $quantity_range['min_quantity'];
-$max_quantity = $quantity_range['max_quantity'];
-
-$qry2 = $conn->query("SELECT i.*, (COALESCE((SELECT SUM(quantity) FROM `stockin_list` WHERE item_id = $item_id), 0) 
-                        - COALESCE((SELECT SUM(quantity) FROM `stockout_list` WHERE item_id = $item_id), 0) 
-                        - COALESCE((SELECT SUM(quantity) FROM `waste_list` WHERE item_id = $item_id), 0)) 
-                        AS `total_quantity` FROM `item_list` i WHERE i.id = $item_id");
-    $row = $qry2->fetch_assoc();
-    $total_quantity = $row['total_quantity'];
+$min_quantity = $quantity_range['min_quantity'] ?? '';
+$max_quantity = $quantity_range['max_quantity'] ?? '';
 
 ?>
 <div class="container-fluid">
     <form action="" id="stockin-form">
-        <input type="hidden" name="item_id" value="<?= $item_id ?>">
+        <input type="hidden" name="id" value="<?= isset($id) ? $id : '' ?>">
         <div class="form-group">
             <label for="date" class="control-label">Date</label>
-            <input type="date" name="date" id="date" class="form-control form-control-sm rounded-0" max="<?= date("Y-m-d") ?>" required>
+            <input type="date" name="date" id="date" class="form-control form-control-sm rounded-0" value="<?= isset($date) ? $date : '' ?>" max="<?= date("Y-m-d") ?>" required>
         </div>
         <div class="form-group">
-            <label for="quantity" class="control-label">Quantity (Range: <?= $min_quantity ?> - <?= $max_quantity ?>)</label>
-            <input type="number" step="any" name="quantity" id="quantity" class="form-control form-control-sm rounded-0 text-right" min="<?= $min_quantity ?>" max="<?= $max_quantity ?>" <?= ($total_quantity > $max_quantity) ? 'disabled' : '' ?> required>
+            <label for="quantity" class="control-label">Quantity</label>
+            <input type="number" step="any" name="quantity" id="quantity" class="form-control form-control-sm rounded-0 text-right" value="<?= isset($quantity) ? $quantity : '' ?>" min="<?= $min_quantity ?>"  required>
         </div>
-
         <div class="form-group">
             <label for="remarks" class="control-label">Remarks</label>
-            <textarea name="remarks" id="remarks" class="form-control form-control-sm rounded-0" required></textarea>
+            <textarea name="remarks" id="remarks" class="form-control form-control-sm rounded-0" required><?= isset($remarks) ? $remarks : '' ?></textarea>
         </div>
     </form>
 </div>
 <script>
-
     $(function(){
-        
         $('#stockin-form').submit(function(e){
             e.preventDefault();
             var _this = $(this);
@@ -64,7 +65,6 @@ $qry2 = $conn->query("SELECT i.*, (COALESCE((SELECT SUM(quantity) FROM `stockin_
                 },
                 success: function(resp){
                     if(typeof resp == 'object' && resp.status == 'success'){
-                        updateItemStatus(resp.item_id); // Call the function to update item status
                         location.reload();
                     } else if(resp.status == 'failed' && !!resp.msg){
                         var el = $('<div>');
@@ -81,26 +81,5 @@ $qry2 = $conn->query("SELECT i.*, (COALESCE((SELECT SUM(quantity) FROM `stockin_
                 }
             });
         });
-
-        function updateItemStatus(itemID) {
-            $.ajax({
-                url: _base_url_ + "stocks/update_item_status.php",
-                data: { item_id: itemID },
-                method: 'POST',
-                dataType: 'json',
-                success: function(resp) {
-                    if (resp.status === 'success') {
-                        console.log('Item status updated successfully.');
-                    } else {
-                        console.log('Failed to update item status.');
-                    }
-                },
-                error: function(err) {
-                    console.log('An error occurred while updating item status.');
-                    console.log(err);
-                }
-            });
-        }
     });
-
 </script>

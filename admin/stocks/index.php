@@ -40,7 +40,7 @@
 						<th>Date Created</th>
 						<th>Item</th>
 						<th>Unit</th>
-						<th>Available</th>
+						<th align="center" class="text-center">Available</th>
 						<?php if($_settings->userdata('type') == 3 || $_settings->userdata('type') == 2) : ?>
 						<th>Action</th>
 						<?php endif; ?>
@@ -62,7 +62,7 @@
 								</div>
 							</td>
 							<td class=""><?= $row['unit'] ?></td>
-							<td class="text-right"><?= format_num($row['available']) ?></td>
+							<td align="center"><?= format_num($row['available']) ?></td>
 							<?php if($_settings->userdata('type') == 3 || $_settings->userdata('type') == 2) : ?>
 							<td align="center">
 				                    <a class="btn btn-flat btn-sm btn-light bg-gradient-light border" href="./?page=stocks/view_stock&id=<?php echo $row['id'] ?>"><span class="fa fa-eye text-dark"></span> View</a>

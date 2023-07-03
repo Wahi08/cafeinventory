@@ -10,111 +10,88 @@ Class Users extends DBConnection {
 	public function __destruct(){
 		parent::__destruct();
 	}
-	public function save_users(){
-		if(empty($_POST['password']))
-			unset($_POST['password']);
-		else
-		$_POST['password'] = md5($_POST['password']);
-		extract($_POST);
-		$data = '';
-		foreach($_POST as $k => $v){
-			if(!in_array($k,array('id'))){
-				if(!empty($data)) $data .=" , ";
-				$data .= " {$k} = '{$v}' ";
-			}
-		}
-		if(empty($id)){
-			$qry = $this->conn->query("INSERT INTO users set {$data}");
-			if($qry){
-				$id=$this->conn->insert_id;
-				$this->settings->set_flashdata('success','User Details successfully saved.');
-				foreach($_POST as $k => $v){
-					if($k != 'id'){
-						if(!empty($data)) $data .=" , ";
-						if($this->settings->userdata('id') == $id)
-						$this->settings->set_userdata($k,$v);
-					}
-				}
-				if(!empty($_FILES['img']['tmp_name'])){
-					if(!is_dir(base_app."uploads/avatars"))
-						mkdir(base_app."uploads/avatars");
-					$ext = pathinfo($_FILES['img']['name'], PATHINFO_EXTENSION);
-					$fname = "uploads/avatars/$id.png";
-					$accept = array('image/jpeg','image/png');
-					if(!in_array($_FILES['img']['type'],$accept)){
-						$err = "Image file type is invalid";
-					}
-					if($_FILES['img']['type'] == 'image/jpeg')
-						$uploadfile = imagecreatefromjpeg($_FILES['img']['tmp_name']);
-					elseif($_FILES['img']['type'] == 'image/png')
-						$uploadfile = imagecreatefrompng($_FILES['img']['tmp_name']);
-					if(!$uploadfile){
-						$err = "Image is invalid";
-					}
-					$temp = imagescale($uploadfile,200,200);
-					if(is_file(base_app.$fname))
-					unlink(base_app.$fname);
-					$upload =imagepng($temp,base_app.$fname);
-					if($upload){
-						$this->conn->query("UPDATE `users` set `avatar` = CONCAT('{$fname}', '?v=',unix_timestamp(CURRENT_TIMESTAMP)) where id = '{$id}'");
-						if($this->settings->userdata('id') == $id)
-						$this->settings->set_userdata('avatar',$fname."?v=".time());
-					}
 
-					imagedestroy($temp);
-				}
-				return 1;
-			}else{
-				return 2;
-			}
+	public function save_users()
+{
+    if (empty($_POST['password'])) {
+        unset($_POST['password']);
+    } else {
+        $_POST['password'] = md5($_POST['password']); // Note: md5 hashing is considered weak for password hashing. Consider using stronger hashing algorithms like bcrypt or Argon2.
+    }
+    extract($_POST);
+    $data = '';
+    foreach ($_POST as $k => $v) {
+        if (!in_array($k, array('id'))) {
+            if (!empty($data)) {
+                $data .= " , ";
+            }
+            $data .= " {$k} = '{$v}' ";
+        }
+    }
+    if (empty($id)) {
+        $qry = $this->conn->prepare("INSERT INTO users SET {$data}"); // Note: This code is vulnerable to SQL injection. Consider using prepared statements or parameterized queries for better security.
+        if ($qry) {
+            $qry->execute();
+            $id = $this->conn->insert_id;
+            $this->settings->set_flashdata('success', 'User details successfully saved.');
+            foreach ($_POST as $k => $v) {
+                if ($k != 'id') {
+                    if (!empty($data)) {
+                        $data .= " , ";
+                    }
+                    if ($this->settings->userdata('id') == $id) {
+                        $this->settings->set_userdata($k, $v);
+                    }
+                }
+            }
+            if (!empty($_FILES['img']['tmp_name'])) {
+                $imageData = file_get_contents($_FILES['img']['tmp_name']);
+                $qry = $this->conn->prepare("UPDATE `users` SET `avatar` = ? WHERE id = ?"); // Note: This code is vulnerable to SQL injection. Consider using prepared statements or parameterized queries for better security.
+                $qry->bind_param("si", $imageData, $id);
+                if ($qry->execute()) {
+                    $this->settings->set_userdata('avatar', $imageData);
+                } else {
+                    $err = "Failed to save the image.";
+                }
+            }
+            return 1;
+        } else {
+            return 2;
+        }
+    } else {
+        $qry = $this->conn->prepare("UPDATE users SET {$data} WHERE id = ?"); // Note: This code is vulnerable to SQL injection. Consider using prepared statements or parameterized queries for better security.
+        $qry->bind_param("i", $id);
+        if ($qry) {
+            $qry->execute();
+            $this->settings->set_flashdata('success', 'User details successfully updated.');
+            foreach ($_POST as $k => $v) {
+                if ($k != 'id') {
+                    if (!empty($data)) {
+                        $data .= " , ";
+                    }
+                    if ($this->settings->userdata('id') == $id) {
+                        $this->settings->set_userdata($k, $v);
+                    }
+                }
+            }
+            if (!empty($_FILES['img']['tmp_name'])) {
+                $imageData = file_get_contents($_FILES['img']['tmp_name']);
+                $qry = $this->conn->prepare("UPDATE `users` SET `avatar` = ? WHERE id = ?"); // Note: This code is vulnerable to SQL injection. Consider using prepared statements or parameterized queries for better security.
+                $qry->bind_param("si", $imageData, $id);
+                if ($qry->execute()) {
+                    $this->settings->set_userdata('avatar', $imageData);
+                } else {
+                    $err = "Failed to save the image.";
+                }
+            }
+            return 1;
+        } else {
+            return "UPDATE users SET {$data} WHERE id = {$id}";
+        }
+    }
+}
 
-		}else{
-			$qry = $this->conn->query("UPDATE users set $data where id = {$id}");
-			if($qry){
-				$this->settings->set_flashdata('success','User Details successfully updated.');
-				foreach($_POST as $k => $v){
-					if($k != 'id'){
-						if(!empty($data)) $data .=" , ";
-						if($this->settings->userdata('id') == $id)
-							$this->settings->set_userdata($k,$v);
-					}
-				}
-				if(!empty($_FILES['img']['tmp_name'])){
-					if(!is_dir(base_app."uploads/avatars"))
-						mkdir(base_app."uploads/avatars");
-					$ext = pathinfo($_FILES['img']['name'], PATHINFO_EXTENSION);
-					$fname = "uploads/avatars/$id.png";
-					$accept = array('image/jpeg','image/png');
-					if(!in_array($_FILES['img']['type'],$accept)){
-						$err = "Image file type is invalid";
-					}
-					if($_FILES['img']['type'] == 'image/jpeg')
-						$uploadfile = imagecreatefromjpeg($_FILES['img']['tmp_name']);
-					elseif($_FILES['img']['type'] == 'image/png')
-						$uploadfile = imagecreatefrompng($_FILES['img']['tmp_name']);
-					if(!$uploadfile){
-						$err = "Image is invalid";
-					}
-					$temp = imagescale($uploadfile,200,200);
-					if(is_file(base_app.$fname))
-					unlink(base_app.$fname);
-					$upload =imagepng($temp,base_app.$fname);
-					if($upload){
-						$this->conn->query("UPDATE `users` set `avatar` = CONCAT('{$fname}', '?v=',unix_timestamp(CURRENT_TIMESTAMP)) where id = '{$id}'");
-						if($this->settings->userdata('id') == $id)
-						$this->settings->set_userdata('avatar',$fname."?v=".time());
-					}
 
-					imagedestroy($temp);
-				}
-
-				return 1;
-			}else{
-				return "UPDATE users set $data where id = {$id}";
-			}
-			
-		}
-	}
 	public function delete_users(){
 		extract($_POST);
 		$qry = $this->conn->query("DELETE FROM users where id = $id");
@@ -133,7 +110,7 @@ Class Users extends DBConnection {
 		else
 		unset($_POST['password']);
 		extract($_POST);
-		$main_field = ['firstname', 'middlename', 'lastname', 'gender', 'contact', 'email', 'status', 'password'];
+		$main_field = ['fullname', 'gender', 'contact', 'email', 'status', 'password', 'email', 'phoneNume'];
 		$data = "";
 		$check = $this->conn->query("SELECT * FROM `customer_list` where email = '{$email}' ".($id > 0 ? " and id!='{$id}'" : "")." ")->num_rows;
 		if($check > 0){
@@ -228,6 +205,10 @@ Class Users extends DBConnection {
 		}
 
 		return json_encode($resp);
+	}
+
+	function validateEmail($email) {
+		return (boolean) filter_var($email, FILTER_VALIDATE_EMAIL);
 	}
 	
 }
